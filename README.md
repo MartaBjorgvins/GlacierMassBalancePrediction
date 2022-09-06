@@ -7,7 +7,7 @@ Therefore, simulated data are used instead of data from climate models. The simu
 
 The project is important as it presents a method that others can use, despite the fact that climate model covariates for linear regression model for Vatnajökull Glacier’s winter and summer mass balance are not currently available. 
 
-In this project, a weighted linear regression model is used to predict the future mass balance of a glacier. The reason why it is weighted is that, in the case of GMB data, it is common to have two or more data sources that have different measurement variance. The data used in this project to fit the model are combined data from the Harmonie model, which is a snowfall model dating back to 1981, and data from measurements starting in 1992.
+In this project, a weighted linear regression model is used to predict the future mass balance of a glacier. The reason why it is weighted is that, in the case of GMB data, it is common to have two or more data sources that have different measurement variance. The data used in this project to fit the model are combined data from the HIRHAM5 model, which is a snowfall model dating back to 1981, and data from measurements starting in 1992.
 
 The idea behind the prediction model is to find time series of weather factors from climate and ocean models that correlate with the GMB and select the once that jointly give the smallest prediction error.
 
@@ -27,7 +27,7 @@ The covariates that were used in the final models for the winter, summer and net
 
  - The Atlantic Multidecadal Oscillation (AMO) in May
 
- - The sea surface temperature (SST) on the area south-west of Icelad in May 
+ - The sea surface temperature (SST) on the area south-west of Iceland in May 
 
  - The Greenland Blocking Index (GBI) in November
 
@@ -48,7 +48,7 @@ Here is a table that shows what data are in what sheet in the data file.
 | Variable 1 | year | year | year | year |
 | Variable 2 | bw | bs | AirT_Feb | AirT_Jul |
 | Variable 3 | AirT_Feb | AirT_Jul | GBINov | AMOMay |
-| Variable 4 | GBINov | AMOMay | GBIwinter | sstSW_May |
+| Variable 4 | GBINov | AMOMay | GBIwinter | SeaTSW_May |
 | Variable 5 | GBIwinter | sstSW_May |  |  |
 
 ### Output
@@ -81,12 +81,12 @@ where
  - $GBINov_t$: The Greenland Blocking monthly Index for November in year $t$
  - $GBIwinter_t$: The mean of the Greenland Blocking monthly Index over the winter season in year $t$
  - $AMOMay_t$: The Atlantic Multidecadal Oscillation in May in year $t$
- - $sstSWMay_t$: The sea surface temperature south-west of Iceland in May in year $t$
+ - $SeaTSWMay_t$: The sea surface temperature south-west of Iceland in May in year $t$
  - $\varepsilon_t$: The error term
 
 The net GMB is calculated with $N_t = W_t + S_t$.
 
-When working with glacier mass balance data, it is often the case that the older data are not as accurate as the more recent data because the mass balance is not as accurately measured or it is calculated from simulated values(re-analysis??). In order to take into account knowledge from different data sources, then the observations that are more accurate are given more weight by using a weighted linear regression. The mass balance data of Vatnajökull Glacier is combination of direct observation and simulated values (re-analysis?), and thus, it was anticipated that the standard deviation of the simulated data was higher than of the direct observation. This was taken into account by forming a weight matrix. The weight matrix is a diagonal matrix that stores information about the heteroscedasticity of the mass balance data. To find the size of the scaling factor, the estimate of the standard deviation of the error term in the linear model when using only the measured data is computed and the standard deviation of the error between the linear model and the data from the Harmonie model is computed. The ratio between these two standard deviations is found and used as the diagonal elements in the weight matrix which coincide with part of the data coming from the simulation. Thus, the model parameters are estimated using a weighted linear regression.
+When working with glacier mass balance data, it is often the case that the older data are not as accurate as the more recent data because the mass balance is not as accurately measured or it is calculated from re-analysis. In order to take into account knowledge from different data sources, then the observations that are more accurate are given more weight by using a weighted linear regression. The mass balance data of Vatnajökull Glacier is combination of direct observation and values from the HIRHAM5 model, and thus, it was anticipated that the standard deviation of the simulated data was higher than of the direct observation. This was taken into account by forming a weight matrix. The weight matrix is a diagonal matrix that stores information about the heteroscedasticity of the mass balance data. To find the size of the scaling factor, the estimate of the standard deviation of the error term in the linear model when using only the measured data is computed and the standard deviation of the error between the linear model and the data from the HIRHAM5 model is computed. The ratio between these two standard deviations is found and used as the diagonal elements in the weight matrix which coincide with part of the data coming from the simulation. Thus, the model parameters are estimated using a weighted linear regression.
 
 The conclusion was that the ratio between the standard deviation of the error term in the linear model for winter mass balance was 1.39 and for summer mass balance was 1.46.
 
