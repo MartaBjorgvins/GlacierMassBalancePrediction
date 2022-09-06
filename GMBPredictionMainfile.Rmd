@@ -1,0 +1,200 @@
+---
+title: "GlacierMassBalancePrediction"
+author: "Marta Björgvinsdóttir"
+date: "7/14/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#Packages used in this progect
+library("excel.link")
+library("tidyr")
+library("ggplot2")
+library("patchwork")
+library("dplyr")
+library("purrr")
+library("writexl")
+
+#set graphs theme
+theme_set(theme_light())
+```
+
+## Introduction
+The motive of this project was to predict the Glacier mass balance (GMB) of Vatnajökull in the future by fitting a weighted linear regression model with historical data and then by using data from climate models to make a predicted time series for the future.
+
+I was unable to extract the time series I needed from the climate models to predict with due to a misunderstanding and time constraints. 
+Therefore, simulated data is used instead of data from climate models. The simulation is only based on the fact that the historical data follow a normal distribution and they have the same mean and standard deviation as the historical data.
+
+A more detailed explanation and theory of the prediction model along with explanation of the data and ideas of how to use this project can be found in the README file of the project's GitHub page.
+
+## The Data
+
+```{r read in data, include=FALSE}
+# read in data from excel file (see ?xl.read.file() for more information on this)
+WinterFitData <- xl.read.file(
+  "AllData.xlsx",
+  xl.sheet = "winterFitData"
+)
+
+SummerFitData <- xl.read.file(
+  "AllData.xlsx",
+  xl.sheet = "summerFitData"
+)
+
+WinterPredictData <- xl.read.file(
+  "AllData.xlsx",
+  xl.sheet = "winterPredictData"
+)
+
+SummerPredictData <- xl.read.file(
+  "AllData.xlsx",
+  xl.sheet = "summerPredictData"
+)
+
+
+# read in csv file (see ?read.csv() for more information on this and other options for working with different file types)
+# WinterFitData <- read.csv(
+#   file = "winterFitData.csv"
+# )
+
+# SummerFitData <- read.csv(
+#   file = "summerFitData.csv"
+# )
+# 
+# WinterPredictData <- read.csv(
+#   file = "winterPredictData.csv"
+# )
+# 
+# SummerPredictData <- read.csv(
+#   file = "summerPredictData.csv"
+# )
+```
+
+Vatnajökull GMB has bean measured annually for both winter mass balance (when most of the accumulates happen) and summer mass balance (when most of the ablates happen) since 1992. The net mass balance is a sum of the winter and summer mass balance.
+The GMB is given in meters water equivalent (m w.e.).
+If the net GMB is more than zero then the glacier is increasing if it is less than zero it is decreasing and if it is zero then it stayed the same as the year before.
+There is a time series of estimated GMB from a snowpack model that is named Harmonie and it has estimated GMB for Vatnajökull from the year 1981. To fit the model we use the data from measurements where we have that and use Harmonie data where we do not, so the Harmonie data from 1981 to 1991 is used.
+
+```{r Plot the GMB data, echo=FALSE} 
+# Here graph plots of the data samples used in the project
+
+# In the fists graph we have the winter, summer and net mass balance from the time period used to fit the models.
+
+# combine the data for the winter, summer and net mass balance to one data frame
+massbalance <- data.frame(cbind(year = WinterFitData[,1],winter = WinterFitData$bw ,summer = SummerFitData$bs))
+massbalance$net <- massbalance$winter + massbalance$summer
+# Reshaping wide format to long format to plot more easily with ggplot
+massbalance <- massbalance %>% gather(period,GMB,winter:net)
+# measurements began in 1992 so to show where the data comes from measurements and when it comes from Harmonie.
+massbalance$from <- ifelse(massbalance$year < 1992 , "Harmonie", "Measurements")
+# make the graph
+ggplot(massbalance, aes(x=year,y=GMB,colour=period)) + geom_line() + geom_point(aes(shape=from)) + 
+  ggtitle("Vatnajökull mass balance(1981-2020)") #here you write a title that fits your mass balance data, I am working with data from Vatnajökull.
+```
+
+The variable data used in the linear regression are air temperature(°C) in Stykkishólmur in Breyðafjörður Iceland for July and February, the Atlantic Multidecadal Oscillation (AMO) in May, The sea surface temperature (SST) on the area south-west of Icelad in May, the Greenland Blocking Index (GBI) in November and GBI winter mean.
+
+```{r Plot the variable data, echo=FALSE, fig.width=12} 
+#Next graphs shows the time series that are the variables in the models
+#first combine the winter and summer data to be able to make one graph with air temperature both in July and February. Use gather() to transform the AirT data to a long format.
+fitAirTdata <- merge(WinterFitData[,c(1,3)],SummerFitData[,c(1,3)]) %>% gather(month,Temperature,AirT_Feb,AirT_Jul)
+# to encode the month vector as a factor
+fitAirTdata$month <- factor(fitAirTdata$month)
+# rename the months to a simpler names for the graph
+levels(fitAirTdata$month) <- c("Feb","Jul")
+
+pAirT <- ggplot(fitAirTdata, aes(x = year, y=Temperature, color=month)) + geom_line() + ggtitle("Air temp in Jul and Feb") + ylab("temperature")
+
+pAMO <- ggplot(SummerFitData, aes(x = year, y= AMOMay)) + geom_line()  + ggtitle("AMO in May") + ylab("AMO")
+
+pSST <- ggplot(SummerFitData, aes(x = year, y= sstSW_May)) + geom_line() + ggtitle("SST SW of Iceland in May") + ylab("SST")
+
+#Here use gather() to transform the data for GBI on long format. It is better when making the graph with GBI for November and the winter mean in one graph with different color for differentiation.
+fitGBIdata <- WinterFitData[,c(1,4,5)] %>% gather(months,GBI,GBINov,GBIwinter)
+# to encode the month vector as a factor
+fitGBIdata$months <- factor(fitGBIdata$months)
+# rename the months to a simpler names for the graph
+levels(fitGBIdata$months) <- c("Nov","winter")
+
+pGBI <- ggplot(fitGBIdata, aes(x = year, y=GBI, colour= months)) + geom_line() + ggtitle("GBI in Nov and the winter")
+
+#Wrap the variable data in one picture frame for neater presentation
+wrap_plots(pAirT, pSST, pAMO, pGBI)
+```
+
+### Future data
+
+The data used in the prediction as mentioned in the introduction section is not from a climate data but just a simulation made to test the methods in this project. It is all simulated from normal distribution but with mean and standard deviation from the historical data which can be seen above.
+Here is graph of this fake future data.
+
+```{r grafs of the future data, echo=FALSE, fig.width=12}
+#Now a similar graphs are made for the future data used to make the prediction.
+#first combine the winter and summer data to be able to make one graph with air temperature both in July and February. Use gather() to transform the AirT data to a long format.
+predAirTdata <- merge(WinterPredictData[,c(1,2)],SummerPredictData[,c(1,2)]) %>% gather(month,Temperature,AirT_FebPlat,AirT_JulPlat)
+# to encode the month vector as a factor
+predAirTdata$month <- factor(predAirTdata$month)
+# rename the months to a simpler names for the graph
+levels(predAirTdata$month) <- c("Feb","Jul")
+
+p1 <- ggplot(predAirTdata, aes(x = year, y=Temperature, color=month)) + geom_line() + ggtitle("Air temp in Jul and Feb") + ylab("temperature")
+
+p2 <- ggplot(SummerPredictData, aes(x = year, y= AMOMayPlat)) + geom_line()  + ggtitle("AMO in May") + ylab("AMO")
+
+p3 <- ggplot(SummerPredictData, aes(x = year, y= sstSW_MayPlat)) + geom_line() + ggtitle("SST SW of Iceland in May") + ylab("SST")
+
+#Here use gather() to transform the data for GBI on long format. It is better when making the graph with GBI for November and the winter mean in one graph with different color for differentiation.
+predGBIdata <- WinterPredictData[,c(1,3,4)] %>% gather(months,GBI,GBINovPlat,GBIwinterPlat)
+# to encode the month vector as a factor
+predGBIdata$months <- factor(predGBIdata$months)
+# rename the months to a simpler names for the graph
+levels(predGBIdata$months) <- c("Nov","winter")
+
+p4 <- ggplot(predGBIdata, aes(x = year, y=GBI, colour= months)) + geom_line() + ggtitle("GBI in Nov and the winter")
+
+#Wrap the variable data in one picture frame for neater presentation
+wrap_plots(p1, p2, p3, p4)
+```
+
+
+## Predicting time series
+
+To predict the GMB of Vatnajökull a weighted linear regression model is fitted with the historical data and the parameters of the model are evaluated and then used for prediction. 
+
+```{r predict, echo=FALSE}
+# call the PredictGMB function from the file predictGMB.R (it shout be saved in the same folder) The function fits the model and predicts a time series from the predict Data frames
+source("predictGMB.R")
+PredictedDataframe <- PredictGMB(WinterFitData,SummerFitData,bestDataYearsMark = 1992,WinterPredictData,SummerPredictData)
+```
+
+
+```{r export perdition data, echo=FALSE, eval=TRUE}
+#here is a code that will export the data frame "PredictedDataframe" both as excel worksheet and csv file, the files will be saved in the same directory as this project.
+
+# to export the predicted GMB time series to an excel xlsx file:
+write_xlsx(PredictedDataframe, "PredictedDataframe.xlsx")
+# see ?write_xlsx() for more information on the function
+
+# to export the predicted GMB time series to a csv file:
+write.csv(PredictedDataframe, "PredictedDataframe.csv", row.names=FALSE)
+# see ?write.csv() for more information on the function
+```
+
+A table with the prediction will now be saved, both as an csv file and as an excel xlsx file, and stored in the same directory as you store this project.
+
+There is a weighted linear regression model for the winter mass balance and another for the summer mass balance. The predicted net mass balance is calculated by adding the winter and summer mass balance. Accumulated net mass balance is also calculated.
+
+```{r plot the prediction, echo=FALSE, fig.width=12}
+# make the predicted data on long format to easily graph with colored lines
+long_PDF <- PredictedDataframe[,1:4] %>% gather(period,PredictedGMB,WinterPrediction:NetPrediction)
+# plot the predicted winter, summer and net balance
+p5 <- ggplot(long_PDF, aes(x=year,y=PredictedGMB,colour=period)) + geom_line() + ggtitle("Predicted GBM")
+
+# Plot the accumulated net GMB
+p6 <- ggplot(PredictedDataframe, aes(x=year,y=accumNetPredic)) + geom_line()  + ggtitle("Predicted accumulated GBM") + ylab("accumulated GBM")
+
+#Wrap two plots so they take less space
+wrap_plots(p5, p6)
+```
+
