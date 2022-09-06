@@ -57,13 +57,17 @@ The Output is a table with the prediction. It contains predictions of winter, su
 ## The model
 
 The statistical models for the winter and summer GMB of Vatnajökull Glacier used in this project are given below. To model the net GMB, the outcome of the summer GMB prediction and the winter GMB prediction are added together. The statistical models are 
+
 $$
 W_t = \beta_0 + \beta_1 AirTFeb_t + \beta_2 GBINov_t + \beta_3 GBIwinter_t + \varepsilon_t
 $$
+
 and
+
 $$
-S_t = \beta_0 + \beta_1 AirTJul_t + \beta_2 AMOMay_t + \beta_3 sstSWMay_t + \varepsilon_t
+S_t = \beta_0 + \beta_1 AirTJul_t + \beta_2 AMOMay_t + \beta_3 SeaTSWMay_t + \varepsilon_t
 $$
+
 where
 
  - $W_t$: Winter mass balance in year $t$
@@ -87,12 +91,15 @@ When working with glacier mass balance data, it is often the case that the older
 The conclusion was that the ratio between the standard deviation of the error term in the linear model for winter mass balance was 1.39 and for summer mass balance was 1.46.
 
 The covariance matrix of the joint observations is given by 
+
 $$
 \Sigma = \sigma^2 Q
 $$
-where $Q$ is the diagonal weight matrix and $\sigma^2$ is variance of the direct observations. The diagonal elements of $Q$ that correspond to the direct observations are equal to 1, while the other elements are equal to 1.39^2 for the winter mass balance and equal to 1.46^2 for the summer mass balance. 
+
+where $Q$ is the diagonal weight matrix and $\sigma^2$ is variance of the direct observations. The diagonal elements of $Q$ that correspond to the direct observations are equal to 1, while the other elements are equal to $1.39^2$ for the winter mass balance and equal to $1.46^2$ for the summer mass balance. 
 
 The model parameters are estimated with weighted linear regression that takes the weight of the $Q$ matrix into account,  
+
 $$
 \hat{\beta}=(X^TQ^{-1}X)^{-1}X^TQ^{-1}y.
 $$
