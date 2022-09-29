@@ -75,7 +75,7 @@ SummerPredictData <- xl.read.file(
 Vatnajökull GMB has bean measured annually for both winter mass balance (when most of the accumulates happen) and summer mass balance (when most of the ablates happen) since 1992. The net mass balance is a sum of the winter and summer mass balance.
 The GMB is given in meters water equivalent (m w.e.).
 If the net GMB is more than zero then the glacier is increasing if it is less than zero it is decreasing and if it is zero then it stayed the same as the year before.
-There is a time series of estimated GMB from a snowpack model that is named Harmonie and it has estimated GMB for Vatnajökull from the year 1981. To fit the model we use the data from measurements where we have that and use Harmonie data where we do not, so the Harmonie data from 1981 to 1991 is used.
+There is a time series of estimated GMB from a snowpack model that is named HIRHAM5 and it has estimated GMB for Vatnajökull from the year 1981. To fit the model we use the data from measurements where we have that and use HIRHAM5 data where we do not, so the HIRHAM5 data from 1981 to 1991 is used.
 
 ```{r Plot the GMB data, echo=FALSE} 
 # Here graph plots of the data samples used in the project
@@ -87,14 +87,14 @@ massbalance <- data.frame(cbind(year = WinterFitData[,1],winter = WinterFitData$
 massbalance$net <- massbalance$winter + massbalance$summer
 # Reshaping wide format to long format to plot more easily with ggplot
 massbalance <- massbalance %>% gather(period,GMB,winter:net)
-# measurements began in 1992 so to show where the data comes from measurements and when it comes from Harmonie.
-massbalance$from <- ifelse(massbalance$year < 1992 , "Harmonie", "Measurements")
+# measurements began in 1992 so to show where the data comes from measurements and when it comes from HIRHAM5.
+massbalance$from <- ifelse(massbalance$year < 1992 , "HIRHAM5", "Measurements")
 # make the graph
 ggplot(massbalance, aes(x=year,y=GMB,colour=period)) + geom_line() + geom_point(aes(shape=from)) + 
   ggtitle("Vatnajökull mass balance(1981-2020)") #here you write a title that fits your mass balance data, I am working with data from Vatnajökull.
 ```
 
-The variable data used in the linear regression are air temperature(°C) in Stykkishólmur in Breyðafjörður Iceland for July and February, the Atlantic Multidecadal Oscillation (AMO) in May, The sea surface temperature (SST) on the area south-west of Icelad in May, the Greenland Blocking Index (GBI) in November and GBI winter mean.
+The variable data used in the linear regression are air temperature(°C) in Stykkishólmur in Breyðafjörður Iceland for July and February, the Atlantic Multidecadal Oscillation (AMO) in May, The sea surface temperature (SST) on the area south-west of Iceland in May, the Greenland Blocking Index (GBI) in November and GBI winter mean.
 
 ```{r Plot the variable data, echo=FALSE, fig.width=12} 
 #Next graphs shows the time series that are the variables in the models
